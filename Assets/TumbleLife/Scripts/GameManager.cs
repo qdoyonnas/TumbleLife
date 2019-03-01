@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
 
+[RequireComponent(typeof(AudioSource))]
 public class GameManager : MonoBehaviour
 {
     public static GameManager _instance;
@@ -17,8 +18,10 @@ public class GameManager : MonoBehaviour
 
     public Camera mainCamera;
 
-    public ConfigurableJoint joint;
+    ConfigurableJoint joint;
     public TumbleBlock grabbedBlock = null;
+
+    public float boundsHeight = -10f;
 
     public float spawnMin = 0.5f;
     public float spawnMax = 1.5f;
@@ -33,6 +36,12 @@ public class GameManager : MonoBehaviour
     public Transitional scoreCounter;
     public Transitional replayScreen;
     public Text replayScoreCounter;
+
+    public float pitchVariation = 0.3f;
+    public AudioClip grabSound;
+    AudioSource audioSource;
+
+    public bool doDebug = false;
 
     public enum GameState {
         menu,
@@ -53,7 +62,7 @@ public class GameManager : MonoBehaviour
                     for( int i = blocks.Count - 1; i >= 0; i-- ) {
                         TumbleBlock block = blocks[i];
                         blocks.Remove(block);
-                        Destroy(block);
+                        Destroy(block.gameObject);
                     }
                     replayScoreCounter.text = string.Format("{0}s", (Time.time - startTime).ToString("0.00"));
                     break;
@@ -86,6 +95,7 @@ public class GameManager : MonoBehaviour
         _instance = this;
 
         joint = GetComponent<ConfigurableJoint>();
+        audioSource = GetComponent<AudioSource>();
         state = GameState.menu;
     }
 
@@ -109,6 +119,8 @@ public class GameManager : MonoBehaviour
                 TumbleBlock blockScript = hit.collider.gameObject.GetComponent<TumbleBlock>();
                 if (blockScript != null && blockScript.isGrabbable)
                 {
+                    audioSource.pitch = Random.Range(1 - pitchVariation, 1 + pitchVariation);
+                    audioSource.PlayOneShot(grabSound);
                     grabbedBlock = blockScript;
                     joint.connectedBody = grabbedBlock.rigidBody;
                 }
@@ -147,12 +159,10 @@ public class GameManager : MonoBehaviour
         if (Time.time > spawnTime)
         {
             if (Random.value < 0.5f) {
-                float angle = Random.Range(80f, 88f) * Mathf.Deg2Rad;
-                Vector3 velocity = new Vector3( Mathf.Cos(angle), Mathf.Sin(angle) ) * 20f;
+                Vector3 velocity = Vector3.up * Random.Range(16f,21f);
                 SpawnBlock(new Vector3(-13f, -5f), velocity, new Vector3(Random.Range(1f, 5f), Random.Range(0.5f, 2f), 1));
             } else {
-                float angle = Random.Range(80f, 88f) * Mathf.Deg2Rad;
-                Vector3 velocity = new Vector3( -Mathf.Cos(angle), Mathf.Sin(angle) ) * 20f;
+                Vector3 velocity = Vector3.up * Random.Range(16f,21f);
                 SpawnBlock(new Vector3(13f, -5f), velocity, new Vector3(Random.Range(1f, 5f), Random.Range(0.5f, 2f), 1));
             }
 
